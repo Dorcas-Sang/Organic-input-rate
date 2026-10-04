@@ -16,10 +16,10 @@
 # The OI rate this model returns is in combination with 
 # the mineral fertilizer already in the ISFM budget
 # CW NOTE (re issue #1): The code runs and the R logic is correct.
-# CW NOTE: OI* is high mainly because yield is P-limited (see notes at the
-# CW NOTE: P_tot lines), not because the targets are too demanding.
-# CW NOTE: In every case the yield target is the one that fails (Yieldok ~ Jointok).
-# CW NOTE: Fix P units and SOC respiration first, then revisit thresholds.
+# OI* is high mainly because yield is P-limited (see notes at the
+# P_tot lines), not because the targets are too demanding.
+# In every case the yield target is the one that fails (Yieldok ~ Jointok).
+# Fix P units and SOC respiration first, then revisit thresholds.
 
 # Required packages 
 
@@ -72,8 +72,8 @@ input_estimates <- decisionSupport::as.estimate(
 # Environment so the body of built function can be run line by line
 
 # CW NOTE: This leaves every parameter in the global environment. If one is
-# CW NOTE: later removed from the xlsx, the model silently uses the stale value.
-# CW NOTE: Run rm(list = parameters$variable) before mcSimulation.
+# later removed from the xlsx, the model silently uses the stale value.
+# Run rm(list = parameters$variable) before mcSimulation.
 make_variables <- function(input_estimates) {
   sampled_values <- decisionSupport::random(
     rho = input_estimates,
@@ -116,7 +116,7 @@ crops         <- c("Maize", "Soybean") #Crops assessed
 #considerably more demanding expectations are imposed (aspirational targets)
 
 # CW NOTE: Check these targets again after fixing P and SOC. They may be fine;
-# CW NOTE: the model currently makes them look harder than they are.
+# the model currently makes them look harder than they are.
 target_spec <- tibble::tibble(
   scenario             = factor(c("Viability", "Base", "Stringent"),
                                 levels = c("Viability", "Base", "Stringent")),
@@ -131,7 +131,7 @@ target_spec <- tibble::tibble(
 #at least 95% of the maximum joint probability observed within the decision range 
 
 # CW NOTE: The 95%-of-max rule uses the full 0-10 t grid, not the 0-5 t
-# CW NOTE: 'decision range'. If P(joint) keeps rising to 10 t, OI* moves with oi_sweep.
+# 'decision range'. If P(joint) keeps rising to 10 t, OI* moves with oi_sweep.
 near_max_fraction <- 0.95     #at 95 % near maximum achievement
 
 ## Output names encode the OI rate as an integer of hundredths (OI000 ... OI500)
@@ -456,27 +456,27 @@ P_recovery_eff <- min(1, P_recovery * isfm_multiplier)
 K_recovery_eff <- min(1, K_recovery * isfm_multiplier)
       
 # CW NOTE: Fertilizer N is reduced by N_recovery, but OI N, soil N and BNF
-# CW NOTE: count 100%. One kg of OI N is worth 2-3x one kg of fertilizer N.
-# CW NOTE: Make this a deliberate choice and state it in the methods.
+# count 100%. One kg of OI N is worth 2-3x one kg of fertilizer N.
+# Make this a deliberate choice and state it in the methods.
 N_org <- oi_rate * oi_N_available
 P_org <- oi_rate * oi_P_available + P_carryover
 K_org <- oi_rate * oi_K_available + K_carryover
 # CW NOTE: P_rate and K_rate are entered as kg P2O5 and kg K2O (see xlsx), but
-# CW NOTE: demand and OI values are elemental P and K. Convert here:
-# CW NOTE: P = P2O5 * 0.436, K = K2O * 0.830. (Costs are fine as they are.)
+# demand and OI values are elemental P and K. Convert here:
+# P = P2O5 * 0.436, K = K2O * 0.830. (Costs are fine as they are.)
 N_fert <- cp$N_rate * N_recovery_eff
 P_fert <- cp$P_rate * P_recovery_eff
 K_fert <- cp$K_rate * K_recovery_eff
       
 # CW NOTE: UNIT ERROR. P_soil and K_soil are mg/kg, added to kg/ha values.
-# CW NOTE: 1 mg/kg ~ BD * 2 kg/ha at 20 cm. Now soil gives ~0.35 kg P/ha, i.e. nothing.
-# CW NOTE: Also, soil-test P is already 'available', so the extra 2-5% factor shrinks it twice.
+# 1 mg/kg ~ BD * 2 kg/ha at 20 cm. Now soil gives ~0.35 kg P/ha, i.e. nothing.
+# Also, soil-test P is already 'available', so the extra 2-5% factor shrinks it twice.
 P_tot <- sp$P_soil * P_soil_availability + P_org + P_fert
 K_tot <- sp$K_soil * K_soil_availability + K_org + K_fert
       
 # CW NOTE: P is the binding nutrient: P_index ~0.21 at OI=0, 0.56 at OI=5
-# CW NOTE: (mid-point values, maize, mid slope). OI=0 maize yields ~1 t/ha with full
-# CW NOTE: fertilizer, below maize_baseline_yield. This is what pushes OI* up.
+# (mid-point values, maize, mid slope). OI=0 maize yields ~1 t/ha with full
+# fertilizer, below maize_baseline_yield. This is what pushes OI* up.
 P_index <- min(1, P_tot / (cp$ypot * cp$P_demand))
       
 K_index <- min(1, K_tot / (cp$ypot * cp$K_demand))
@@ -488,7 +488,7 @@ N_bnf <- if (crop_name == "Soybean")
       bnf_N * (1 + inoculant_boost) * water_index * P_index else 0
       N_tot <- N_soil + N_org + N_fert + N_bnf
 # CW NOTE: N_half is described as an N *rate* (applied), but here it is
-# CW NOTE: compared with total N supply. Align the description and the use.
+# compared with total N supply. Align the description and the use.
       N_index <- N_tot / (cp$N_half + N_tot)
       
 ## To account for the scarcest nutrients that sets the ceiling 
@@ -502,7 +502,7 @@ heat_factor <- max(0.1, 1 - cp$heat_sens * max(0, annual_temp[yr] - cp$T_opt))
 pH_factor   <- max(0.1, 1 - cp$pH_sens   * abs(sp$pH - cp$pH_opt))
       
 # CW NOTE: rain_index already varies with a floor; drought_year adds another
-# CW NOTE: penalty. Check this is not counting drought twice (or explain why not).
+# penalty. Check this is not counting drought twice (or explain why not).
 drought_factor <- if (drought_year[yr] == 1) 1 - dryspell_damage else 1
       
 flood_factor   <- if (flood_year[yr] == 1)
@@ -543,7 +543,7 @@ C_in_crop <- (shoot_dm * residue_retained_fraction + root_dm) * C_conc_crop
 #stabilisation efficiency declines as the soil fills up
       
 # CW NOTE: Saturation only scales hum_eff. The C it keeps out of the stable pool
-# CW NOTE: goes to the active pool instead (line C_to_active), so total SOC is never capped.
+# goes to the active pool instead (line C_to_active), so total SOC is never capped.
 saturation <- max(0, 1 - soc / (sp$soc_init * soc_saturation_ratio))
       hum_eff    <- hum_eff_max * saturation
       
@@ -554,8 +554,8 @@ saturation <- max(0, 1 - soc / (sp$soc_init * soc_saturation_ratio))
 # to avoid having the whole SOC stock at 0-20cm depth to decompose at the rate of the active pool 
       
 # CW NOTE: All input C becomes SOC here; none is respired. Usually only
-# CW NOTE: ~hum_eff of added C remains after a year. Result: SOC +80% at 5 t, +145% at 10 t.
-# CW NOTE: Respire most of (C_input_total - C_to_stable) instead of adding it to active.
+# ~hum_eff of added C remains after a year. Result: SOC +80% at 5 t, +145% at 10 t.
+# Respire most of (C_input_total - C_to_stable) instead of adding it to active.
 C_input_total <- C_in_oi + C_in_crop
 C_to_stable <- hum_eff * C_input_total
 C_to_active <- C_input_total - C_to_stable
@@ -593,7 +593,7 @@ organic_K_pool <- organic_K_pool +
 ## typically at the weeding and harvest peaks
 
 # CW NOTE: Family labour is free; only labour above hh_labour_available is paid.
-# CW NOTE: This makes high OI rates look cheap. Try a shadow wage as a sensitivity run.
+# This makes high OI rates look cheap. Try a shadow wage as a sensitivity run.
 labour_days <- labour_field_days + oi_rate * labour_oi_per_t   # person-days ha-1
 hired_days  <- pmax(0, labour_days - hh_labour_available)
 cash_labour_cost <- hired_days * wage_rate * labour_cost_multiplier
@@ -638,7 +638,7 @@ list(
 
 #The same 25 years trajectory is evaluated againts the three nested target set
 # CW NOTE: Comment is out of date: line ~103 says Viability is primary, and
-# CW NOTE: there is no 'Minimum' scenario (also at the loop below).
+# there is no 'Minimum' scenario (also at the loop below).
 # Base = primary decision analysis 
 # Minimum, Stringent = robustness analysis 
 
@@ -696,7 +696,7 @@ return(as.list(out))
 #### 5. PAIRED MONTE CARLO SWEEP ####
 
 # CW NOTE: With 200 runs probabilities move in 0.005 steps, so OI* can jump a
-# CW NOTE: grid step between seeds. Use 10k for the manuscript.
+# grid step between seeds. Use 10k for the manuscript.
 n_runs <- 200L  #just for testing i will later change to 10k
 
 set.seed(2026)
@@ -766,8 +766,8 @@ probability_df <- scenarios_long |>
 # OI* = smallest OI whose joint probability is >= 95% of the maximum joint probability
 
 # CW NOTE: Flag cases where max_prob is reached at the last grid point or is low
-# CW NOTE: (maize Base/Stringent: 0.02-0.47) and report them as 'not attainable
-# CW NOTE: in a realistic range' rather than as an optimum. There is also no OI supply limit.
+# (maize Base/Stringent: 0.02-0.47) and report them as 'not attainable
+# in a realistic range' rather than as an optimum. There is also no OI supply limit.
 select_oi_robust <- function(df) {
   max_p <- max(df$probability, na.rm = TRUE)
   if (!is.finite(max_p) || max_p == 0) {
